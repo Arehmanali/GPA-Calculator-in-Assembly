@@ -1,26 +1,24 @@
 
 TITLE "GPA Calculator"
-
-.MODEL small
-.STACK 256
+INCLUDE Irvine32.inc
 
 .DATA              
-
     ; Declaring some string and variables in order to use further...
-     newline DB 0DH,0AH,"$"
-     welcome DB "********** Welcome to the GPA Calculator ***********$"
-     thanks DB 0DH,0AH,0DH,0AH,"Thanks for using our program. See you again... $" 
+     newline DB 0DH,0AH,"$",0
+     welcome DB "********** Welcome to the GPA Calculator ***********$",0
+     thanks DB 0DH,0AH,0DH,0AH,"Thanks for using our program. See you again... $",0 
      ask DB 0DH,0AH,0DH,0AH,"Now What you want to do?"
           DB 0DH,0AH,"1- GPA "
-          DB 0DH,0AH,"2- Exit ",0DH,0AH," $"
-     invalid_ DB 0DH,0AH,"Your input is not valid. Please enter a valid input $"
-     subject DB 0DH,0AH,0DH,0AH,"How many subjects do you have in your semester?",0DH,0AH," $"
-     grade DB 0DH,0AH,0DH,0AH,"Enter the grade of subject $"
-     invalidG DB 0DH,0AH,"The grade you entered is invalid. Please enter a valid grade  $" 
-     invalid DB 0DH,0AH,"Your input is not valid please enter a valid input from 1 to 9.",0DH,0AH," $"
-     creditHour DB 0DH,0AH,"Now enter the credit hours of that subject",0DH,0AH,"$"
-     show DB 0AH,0DH,"Your GPA is :  $"
-     nSub DB ?
+          DB 0DH,0AH,"2- Exit ",0DH,0AH," $",0
+     invalid_ DB 0DH,0AH,"Your input is not valid. Please enter a valid input $",0
+     subject DB 0DH,0AH,0DH,0AH,"How many subjects do you have in your semester?",0DH,0AH," $",0
+     grade DB 0DH,0AH,0DH,0AH,"Enter the grade of subject $",0
+     invalidG DB 0DH,0AH,"The grade you entered is invalid. Please enter a valid grade  $" ,0
+     invalid DB 0DH,0AH,"Your input is not valid please enter a valid input from 1 to 9.",0DH,0AH," $",0
+     creditHour DB 0DH,0AH,"Now enter the credit hours of that subject",0DH,0AH,"$",0
+	 nSub DB ?
+     show DB 0AH,0DH,"Your GPA is :  $",0
+     
      i DB ?
 
      var DB ?,?     
@@ -30,10 +28,9 @@ TITLE "GPA Calculator"
      
 .CODE
 main PROC
-     .startup
    ; Display welcome string
-     lea dx,welcome
-     call displayString 
+     mov edx,offset welcome
+     call writeString 
      
    ; Calculating the GPA...
      GPA: 
@@ -42,28 +39,29 @@ main PROC
         lea dx,subject
         call displayString
         TakeS:
-        call input
+        call readInt
       ; Saving number of subjects in cl for comparasion of loop
         mov cl,al
-        sub cl,30h
+		mov i,al
         cmp cl,0               ; 0 is an invalid value
         JE not_valid
         cmp cl,9               ; value greater than 9 is also invalid
         JG not_valid 
         Next:  
           ; Increamenting the loop value
-            inc i
+           
             
           ; Asking for grade
             lea dx,grade
             call displayString
             mov dl,i
             add dl,30h
-            call displayChr
             lea dx,newline       ; newline
             call displayString
-            call input 
-            
+            call readChar 
+			call displayChr
+             
+			
           ; moving grade into bl and computing its gpa value
             mov bl,al
             call compute 
@@ -73,8 +71,7 @@ main PROC
             call displayString
             
             takeC:
-                call input
-                sub al,30h
+                call readInt
                 cmp al,0               ; 0 is an invalid value
                 JE notvalid
                 cmp al,9               ; value greater than 9 is also invalid
@@ -88,8 +85,8 @@ main PROC
             
           ; add subject gpa to total
             call sum           
-            
-        cmp cl,i        ; Reapet loop untill i becomes cl
+            dec i
+        cmp i,0        ; Reapet loop untill i becomes cl
         JNE Next       
         
       ; Divide total GPA by tch to compute the result
@@ -100,12 +97,12 @@ main PROC
         call displayString
         mov dl,result
         add dl,30h
-        call displayChr
+        call writeInt
         mov dl,'.'
-        call displayChr
+        call writeInt
         mov bx,0
         mov dl,result+1
-        call displayChr
+        call WriteInt
         JMP askForAgain  
         
       ; For invalid credit hours value...
@@ -129,10 +126,10 @@ main PROC
             
            ; Getting user choice in al
              Choice:
-             call input
-             cmp al,31h
+             call readInt
+             cmp al,1
              JE GPA
-             cmp al,32h
+             cmp al,2
              JE ExitP
              lea dx,invalid_
              call displayString
@@ -143,28 +140,31 @@ main PROC
              ; Thanks note
              lea dx,thanks
              call displayString    
-        .EXIT
+exit 
 main ENDP
-ret
+
 
 ; Function to display character value
 displayChr PROC
-     mov ah,02h
-     int 21h
+     ;mov ah,02h
+     ;int 21h
+	 call writeChar
   ret
 displayChr ENDP 
  
 ; Displaying string 
 displayString PROC
-     mov ah,09h
-     int 21h
+     ;mov al,09h
+     ;int 21h
+	 call writeString
    ret
 displayString ENDP
 
 ; Taking input in al
 input PROC
-     mov ah,01h
-     int 21h    
+     ;mov al,01h
+     ;int 21h
+	 call readInt
    ret
 input ENDP
  
@@ -183,7 +183,8 @@ compute PROC
       JE F
       call invalidGrade      ; Any input other than above will be invalid
       A:
-        call input
+        call readChar
+		call writeChar
         cmp al,'+'           ; A+ grade
         JE AA      
         cmp al,0DH           ; A  grade
@@ -195,14 +196,15 @@ compute PROC
         AA:
            mov var,4
            mov var+1,0
-           JMP Exit
+           JMP _Exit
       ; For A- GPA will be 3.7
         A_:
            mov var,3
            mov var+1,7
-           JMP Exit
+           JMP _Exit
       B: 
-        call input
+        call readChar
+		call writeChar
         cmp al,'+'           ; B+ grade
         JE BPositive
         cmp al,'-'           ; B- grade
@@ -215,21 +217,22 @@ compute PROC
         BB:
            mov var,3
            mov var+1,0
-           JMP Exit                 
+           JMP _Exit                 
            
       ; For B+ grade GPA will be 3.3            
         BPositive:
            mov var,3
            mov var+1,3
-           JMP Exit       
+           JMP _Exit       
            
       ; For B- grade GPA will be 2.7
         BNegative:
            mov var,2
            mov var+1,7
-           JMP Exit
+           JMP _Exit
       CGrade:
-        call input
+        call readChar
+		call writeChar
         cmp al,'+'          ; C+ grade
         JE CPositive
         cmp al,'-'          ; C- grade
@@ -242,19 +245,20 @@ compute PROC
         CC:
            mov var,2
            mov var+1,0
-           JMP Exit  
+           JMP _Exit  
       ; For C+ grade GPA will be 2.3          
         CPositive:
            mov var,2
            mov var+1,3
-           JMP Exit 
+           JMP _Exit 
       ; For C- grade GPA will be 1.7
         CNegative:
            mov var,1
            mov var+1,7
-           JMP Exit
+           JMP _Exit
       D:
-        call input           
+        call readChar
+		call writeChar
         cmp al,'+'           ; D+ grade
         JE DPositive        
         cmp al,'-'           ; D- grade
@@ -267,23 +271,23 @@ compute PROC
         DGrade:
            mov var,1
            mov var+1,0
-           JMP Exit 
+           JMP _Exit 
       ; For D+ grade GPA will be 1.3           
         DPositive:
            mov var,1
            mov var+1,3
-           JMP Exit  
+           JMP _Exit  
       ; For D- grade GPA will be 0.7
         DNegative:
            mov var,0
            mov var+1,7
-           JMP Exit
+           JMP _Exit
            
     ; For F grade GPA will be 0.0
       F:
         mov var,0
         mov var+1,0 
-        JMP Exit
+        JMP _Exit
         
      invalidGrade:  
       ; Asking for a valid grade...
@@ -291,11 +295,12 @@ compute PROC
         call displayString
         lea dx,newline       ;newline
         call displayString
-        call input
+        call readChar
+		call writeChar
         mov bl,al
         JMP up
       
-     Exit:
+     _Exit:
    ret
 compute ENDP
 
@@ -391,5 +396,6 @@ display PROC
           add dl,30h
           int 21h
   ret 
-display ENDP 
-End 
+display ENDP
+
+END main
