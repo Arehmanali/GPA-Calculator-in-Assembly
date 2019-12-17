@@ -10,8 +10,8 @@ grade BYTE ?
 inputCredit BYTE "Please enter the credit Hours of Previous entered subject:",0
 gradeList BYTE 20 DUP(?)
 numOfSubjects dword ?
-
-
+numArray  REAL8 1 dup(4.0,3.7,3.3,3.0,2.7,2.3,2.0,1.7,1.3,1.0,0.0)
+temp dword ?
 inputSubjects BYTE "Please enter the number of Subjects: ",0
 .code 
 main PROC
@@ -58,66 +58,90 @@ mov al,gradeList[esi]
 mov grade,al
 .IF grade[edi]=='A' && grade[edi+1]==' '
 mov eax,creditHour[esi+4]
-mov ebx,4
-mul ebx
-add sum, eax
+mov temp,eax
+fild temp
+fmul numArray
+fstp temp
+fadd sum, temp
 
 .ELSEIF grade[edi]=='A' && grade[edi+1]=='+'
 mov eax,creditHour[esi+4]
-mov ebx,4
-mul ebx
-add sum, eax
+mov temp,eax
+fild temp
+fmul numArray+4
+fadd sum, eax
 
 .ELSEIF grade[edi]=='A' && grade[edi+1]=='-'
 mov eax,creditHour[esi+4]
-mov ebx,3.7
-mul ebx
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+8
+fadd sum, eax
 
-.ELSEIF grade[edi]=='B' && grade[edi+1]=='0dh'
+.ELSEIF grade[edi]=='B' && grade[edi+1]==' '
 mov eax,creditHour[esi+4]
-mul 3.0
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+12
+fadd sum, eax
 
 .ELSEIF grade[edi]=='B' && grade[edi+1]=='+'
 mov eax,creditHour[esi+4]
-mul 3.3
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+16
+fadd sum, eax
 
 .ELSEIF grade[edi]=='B' && grade[edi+1]=='-'
 mov eax,creditHour[esi+4]
-mul 2.7
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+20
+fadd sum, eax
 
 .ELSEIF grade[edi]=='C' && grade[edi+1]=='+'
 mov eax,creditHour[esi+4]
-mul 2.3
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+24
+fadd sum, eax
 
 .ELSEIF grade[edi]=='C' && grade[edi+1]==''
 mov eax,creditHour[esi+4]
-mul 2.0
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+28
+fadd sum, eax
 
 .ELSEIF grade[edi]=='C' && grade[edi+1]=='-'
 mov eax,creditHour[esi+4]
-mul 1.7
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+32
+fadd sum, eax
 
 .ELSEIF grade[edi]=='D' && grade[edi+1]=='+'
 mov eax,creditHour[esi+4]
-mul 1.3
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+36
+fadd sum, eax
 
 .ELSEIF grade[edi]=='D' && grade[edi+1]==' '
 mov eax,creditHour[esi+4]
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+40
+fstp temp
+mov eax,temp
+fadd sum, eax
 
 .ELSEIF grade[edi]=='F' && grade[edi+1]==' '
 mov eax,creditHour[esi+4]
-mov ebx,0
-mul ebx
-add sm, eax
+mov temp,eax
+fild temp
+fmul numArray+44
+fadd sum, temp
 .ENDIF
 inc esi
 loop LOOP1
