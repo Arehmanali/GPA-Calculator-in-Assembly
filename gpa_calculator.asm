@@ -1,4 +1,3 @@
-
 TITLE "GPA Calculator"
 INCLUDE Irvine32.inc
 
@@ -9,7 +8,7 @@ INCLUDE Irvine32.inc
      thanks DB 0DH,0AH,0DH,0AH,"Thanks for using our program. See you again... $",0 
      ask DB 0DH,0AH,0DH,0AH,"Now What you want to do?"
           DB 0DH,0AH,"1- GPA "
-          DB 0DH,0AH,"2- Exit ",0DH,0AH," $",0
+          DB 0DH,0AH,"2- Exit ",0DH,0AH,"Choose an Option: $",0
      invalid_ DB 0DH,0AH,"Your input is not valid. Please enter a valid input $",0
      subject DB 0DH,0AH,0DH,0AH,"How many subjects do you have in your semester?",0DH,0AH," $",0
      grade DB 0DH,0AH,0DH,0AH,"Enter the grade of subject $",0
@@ -17,14 +16,15 @@ INCLUDE Irvine32.inc
      invalid DB 0DH,0AH,"Your input is not valid please enter a valid input from 1 to 9.",0DH,0AH," $",0
      creditHour DB 0DH,0AH,"Now enter the credit hours of that subject",0DH,0AH,"$",0
 	 nSub DB ?
-     show DB 0AH,0DH,"Your GPA is :  $",0
-     
+     show DB 0AH,0DH,"Your GPA is :  ",0
+     numArray REAL8 1 DUP(4.0,3.7,3.3,3.0,2.7,2.3,2.0,1.7,1.3,1.0,0.0)
      i DB ?
 
-     var DB ?,?     
-     total DB 0,0
-     tch DB 0
-     result DB ?,?
+     var REAL4 ?,?     
+     total REAL4 0.0,0.0
+     tch DWORD 0
+     result REAL4 ?,?
+	 temp REAL4 ?
      
 .CODE
 main PROC
@@ -77,7 +77,7 @@ main PROC
                 cmp al,9               ; value greater than 9 is also invalid
                 JG notvalid 
                 
-            add tch,al  ; Adding to total credit hours
+            add tch,eax  ; Adding to total credit hours
             mov bl,al   
             
           ; Multiply subjects grade with credit hours
@@ -90,19 +90,12 @@ main PROC
         JNE Next       
         
       ; Divide total GPA by tch to compute the result
-        call ComputeResult
+        
         
       ; Displaying the result
         lea dx,show
         call displayString
-        mov dl,result
-        add dl,30h
-        call writeInt
-        mov dl,'.'
-        call writeInt
-        mov bx,0
-        mov dl,result+1
-        call WriteInt
+        call ComputeResult
         JMP askForAgain  
         
       ; For invalid credit hours value...
@@ -194,13 +187,11 @@ compute PROC
         call invalidGrade    ; If input is other than A+ or A-
       ; For A and A+ GPA will be 4.0
         AA:
-           mov var,4
-           mov var+1,0
+           fld numArray
            JMP _Exit
       ; For A- GPA will be 3.7
         A_:
-           mov var,3
-           mov var+1,7
+           fld numArray+4
            JMP _Exit
       B: 
         call readChar
@@ -214,21 +205,18 @@ compute PROC
         call invalidGrade    ; If input is other than B+ or B- 
         
       ; For B grade GPA will be 3.0  
-        BB:
-           mov var,3
-           mov var+1,0
+        BPositive:
+          fld numArray+8
            JMP _Exit                 
            
       ; For B+ grade GPA will be 3.3            
-        BPositive:
-           mov var,3
-           mov var+1,3
+        BB:
+           fld numArray+12
            JMP _Exit       
            
       ; For B- grade GPA will be 2.7
         BNegative:
-           mov var,2
-           mov var+1,7
+           fld numArray+16
            JMP _Exit
       CGrade:
         call readChar
@@ -242,19 +230,16 @@ compute PROC
         call invalidGrade   ; If input is other than C+ or C-
         
       ; For C grade GPA will be 2.0  
-        CC:
-           mov var,2
-           mov var+1,0
+        CPositive:
+           fld numArray+20
            JMP _Exit  
       ; For C+ grade GPA will be 2.3          
-        CPositive:
-           mov var,2
-           mov var+1,3
+        CC:
+           fld numArray+24
            JMP _Exit 
       ; For C- grade GPA will be 1.7
         CNegative:
-           mov var,1
-           mov var+1,7
+           fld numArray+28
            JMP _Exit
       D:
         call readChar
@@ -268,25 +253,21 @@ compute PROC
         call invalidGrade    ; If input is other than D+ or D-
          
       ; For D grade GPA will be 1.0  
-        DGrade:
-           mov var,1
-           mov var+1,0
+        DPositive:
+           fld numArray+32
            JMP _Exit 
       ; For D+ grade GPA will be 1.3           
-        DPositive:
-           mov var,1
-           mov var+1,3
+        DGrade:
+           fld numArray+36
            JMP _Exit  
       ; For D- grade GPA will be 0.7
         DNegative:
-           mov var,0
-           mov var+1,7
+           fld numArray+40
            JMP _Exit
            
     ; For F grade GPA will be 0.0
       F:
-        mov var,0
-        mov var+1,0 
+        fld numArray+40
         JMP _Exit
         
      invalidGrade:  
@@ -306,66 +287,27 @@ compute ENDP
 
 ; Multiplying subject's gpa with credit hours
 multiply PROC
-      mov ax,0h
-      mov al,var+1
-      mul bl
-      mov var+1,al
-      mov ax,0h
-      mov al,var
-      mul bl
-      mov var,al 
-      mov bl,var+1
-      
-      mov ax,0h
-      mov al,var+1
-      mov bl,10
-      div bl
-      cmp al,0
-      JE Exit_
-        add var,al
-        mov var+1,ah
-      Exit_:      
+	mov temp,ebx
+	fild temp
+   fmul
    ret
 multiply ENDP
 
 ; Adding gpa of all subjects to total...
 sum PROC    
-      mov bl,var
-      add total,bl
-      mov bl,var+1
-      add total+1,bl
-      mov bl,total
-      
-      mov ax,0h
-      mov al,total+1
-      mov bl,10
-      div bl
-      cmp al,0
-      JE Exitt
-        add total,al
-        mov total+1,ah
-      Exitt: 
+      fld total
+	  fadd
+	  fstp total
   ret
 sum ENDP
 
 ; Divide total gpa with total number of credit hours to compute final gpa...
 ComputeResult PROC
-     mov ax,0h
-     mov al,total
-     mov bl,tch
-     div bl
-     mov result,al
-     mov al,ah    
-     cmp al,0
-     JE Skip
-     mov ah,0h
-     mov cl,10
-     mul cl
-     add al,total+1
-     div bl
-     Skip:
-     mov result+1,al
-     
+	mov eax,tch
+     mov  temp,eax
+	 fild temp
+	 fdiv 
+	 call writeFloat
   ret
 ComputeResult ENDP 
             
