@@ -17,14 +17,18 @@ INCLUDE Irvine32.inc
      creditHour DB 0DH,0AH,"Now enter the credit hours of that subject",0DH,0AH,"$",0
 	 nSub DB ?
      show DB 0AH,0DH,"Your GPA is :  ",0
-     numArray REAL8 1 DUP(4.0,3.7,3.3,3.0,2.7,2.3,2.0,1.7,1.3,1.0,0.0)
-     i DB ?
-
+     
+	 numArray REAL8 1 DUP(4.0,3.7,3.3,3.0,2.7,2.3,2.0,1.7,1.3,1.0,0.0)
+	 i DB ?
      var REAL4 ?,?     
-     total REAL4 0.0,0.0
-     tch DWORD 0
+     total REAL4 0.0
+     tch REAL4 0.0
      result REAL4 ?,?
 	 temp REAL4 ?
+	 filename BYTE "newfile.txt",0
+	 fileHandler dword ?
+	msg1 byte 13 dup(?)
+	msg byte "GPA",0
      
 .CODE
 main PROC
@@ -48,9 +52,6 @@ main PROC
         cmp cl,9               ; value greater than 9 is also invalid
         JG not_valid 
         Next:  
-          ; Increamenting the loop value
-           
-            
           ; Asking for grade
             lea dx,grade
             call displayString
@@ -58,10 +59,8 @@ main PROC
             add dl,30h
             lea dx,newline       ; newline
             call displayString
-            call readChar 
+            call readChar
 			call displayChr
-             
-			
           ; moving grade into bl and computing its gpa value
             mov bl,al
             call compute 
@@ -76,33 +75,42 @@ main PROC
                 JE notvalid
                 cmp al,9               ; value greater than 9 is also invalid
                 JG notvalid 
-                
+
             add tch,eax  ; Adding to total credit hours
-            mov bl,al   
-            
+            mov bl,al
+			mov temp,eax
+
+            fild temp
+			fmul
+			fild total
+			fadd
+			fst total
+			
           ; Multiply subjects grade with credit hours
-            call multiply      
+            ;call multiply
             
           ; add subject gpa to total
-            call sum           
+            ;call sum
             dec i
         cmp i,0        ; Reapet loop untill i becomes cl
         JNE Next       
         
       ; Divide total GPA by tch to compute the result
         
-        
+        fild tch
+		fdiv
       ; Displaying the result
         lea dx,show
         call displayString
-        call ComputeResult
+		call writeFloat
+        ;call ComputeResult
         JMP askForAgain  
         
       ; For invalid credit hours value...
         notValid:
              lea dx,invalid
              call displayString
-             JMP takeC    
+             JMP takeC
              
       ; For invalid number of Subjects...
         not_Valid:
@@ -132,7 +140,37 @@ main PROC
         ExitP: 
              ; Thanks note
              lea dx,thanks
-             call displayString    
+             call displayString 
+			 mov edx,OFFSET filename
+	
+	call CreateOutputFile;	Or OpenInputFile
+
+	mov fileHandler, eax;	File Handler
+	mov edx, offset msg	;	Msg to be read/write
+	mov ecx, sizeof msg	;	Size of the Msg
+	
+	Call WriteToFile
+	mov eax, fileHandler
+	Call closefile
+
+	;
+
+	mov edx, offset filename
+	call OpenInputFile
+	;
+	mov edx, offset msg1
+	mov ecx, sizeof msg1
+
+	Call ReadFromFile
+	
+	; Printing String from Msg1
+	
+
+	mov edx, offset msg1
+	call WriteString
+	
+	call readInt   
+
 exit 
 main ENDP
 
@@ -180,7 +218,7 @@ compute PROC
 		call writeChar
         cmp al,'+'           ; A+ grade
         JE AA      
-        cmp al,0DH           ; A  grade
+        cmp al,0dh           ; A  grade
         JE AA
         cmp al,'-'           ; A- grade
         JE A_
