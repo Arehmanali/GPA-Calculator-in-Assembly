@@ -2,9 +2,11 @@ TITLE "GPA Calculator"
 INCLUDE Irvine32.inc
 
 .DATA              
+	buff byte ?
+	buffer	byte 26 dup(?)
     ; Declaring some string and variables in order to use further...
      newline DB 0DH,0AH,"$",0
-     welcome DB "********** Welcome to the GPA Calculator ***********",0
+     welcome DB "********** Welcome to the GPA Calculator ***********",0,0DH,0AH
      thanks DB 0DH,0AH,0DH,0AH,"Thanks for using our program. See you again... $",0 
      ask DB 0DH,0AH,0DH,0AH,"Now What you want to do?"
           DB 0DH,0AH,"1- GPA "
@@ -16,23 +18,91 @@ INCLUDE Irvine32.inc
      invalidG DB 0DH,0AH,"The grade you entered is invalid. Please enter a valid grade  $" ,0
      invalid DB 0DH,0AH,"Your input is not valid please enter a valid input from 1 to 9.",0DH,0AH," $",0
      creditHour DB 0DH,0AH,"Now enter the credit hours of that subject",0DH,0AH,"$",0
+	 login DB 0DH,0AH,"Please Select the Following",0DH,0AH
+		DB "1- Login",0DH,0AH
+		DB "2- Sign-Up",0DH,0AH,"Choose an Option: $",0
+		loginName DB 0DH,0AH,"Enter your Name for Login :$ ",0
+		loginPass DB 0DH,0AH,"Enter Password :$ ",0
+		SignName DB 0DH,0AH,"Enter your Name for Sign-Up :$ ",0
+		SignPass DB 0DH,0AH,"Enter Password :$ ",0
+		inputSem DB 0DH,0AH,"Enter the Total Previous Semester :",0DH,0AH,"$ ",0
+		inputGPA DB 0DH,0AH,"Enter the GPA of Previous Semester :",0DH,0AH,"$ ",0
+		outputCgpa DB 0DH,0AH,"Your CGPA is :",0
 	 nSub DB ?
      show DB 0AH,0DH,"Your GPA is :  ",0
      numArray REAL4 1 DUP(4.0,3.7,3.3,3.0,2.7,2.3,2.0,1.7,1.3,1.0,0.0)
      i DB ?
-
      var REAL4 ?,?     
      total REAL4 0.0
      tch DWORD 0
      result REAL4 ?,?
 	 temp REAL4 ?
-     
+     nameFile BYTE "nameFile.txt",0 
+	 passFile BYTE "passFile.txt",0 
+	 BUFFER_SIZE = 5000
+	 fileHandle DWORD ? 
+	 nameArray BYTE BUFFER_SIZE DUP(?) 
+	 PassArray BYTE BUFFER_SIZE DUP(?) 
+	 count Byte 0
+
 .CODE
+
 main PROC
    ; Display welcome string
      mov edx,offset welcome
      call writeString 
      
+	 choice1:
+	 lea edx,login
+	 call writeString
+	 call readInt
+	 cmp al,1
+	 je loginPage
+	 cmp al,2
+	 je SignUpPage
+	 lea dx,invalid_
+     call displayString
+	 jmp choice1
+	 LoginPage:
+	 lea edx,loginName
+	 call writeString
+	 call inputString
+	 mov cl,count
+	 mov esi,0
+	 L1:
+	 cmp nameArray[esi], al
+	 je foundName
+	 inc esi
+	 Loop L1
+
+	 foundName:
+	 lea edx,loginName
+	 call writeString
+	 call inputString
+	 mov cl,count
+	 mov esi,0
+	 L2:
+	 cmp passArray[esi],al
+	 je askForAgain
+	 inc esi
+	 loop L2
+	 jmp SignUpPage
+
+
+	 SignUpPage:
+	 lea edx,signName
+	 call writeString
+	 movsx ebx,count
+	 call inputString
+	 mov nameArray[ebx],al
+	 lea edx,signPass
+	 call writeString
+	 call inputString
+	 mov passArray[ebx],al
+	 inc ebx
+	 mov count,bl
+	 JMP askForAgain
+
 	 askForAgain:
              lea dx,ask
              call displayString
@@ -52,7 +122,25 @@ main PROC
 
 			 ;Calculating the CGPA
 			 CGPA:
-
+			 lea dx,inputSem
+			 call writeString
+			 call readInt
+			 mov ecx,eax
+			 mov ebx,0
+			 mov temp,ebx
+			 fild temp
+			 gpaLoop:
+			 lea dx,inputGpa
+			 call writeString
+			 call readFloat
+			 fadd 
+			 LOOP gpaLoop
+			 mov temp,eax
+			 fild temp
+			 fdiv 
+			 lea dx,outputCgpa
+			 call writeString
+			 call writeFloat
 			 jmp AskForAgain
    ; Calculating the GPA...
      GPA: 
@@ -126,9 +214,22 @@ main PROC
              JMP takeS           
        
       ; Asking user if he wants to continue or not          
-        
+	   
         ExitP: 
              ; Thanks note
+			 mov edx,OFFSET nameFile
+			 call CreateOutputFile 
+			 mov eax,fileHandle 
+			 mov edx,OFFSET nameArray
+			 mov ecx,sizeof nameArray
+			 call WriteToFile 
+			 mov edx,OFFSET passFile
+			 call CreateOutputFile 
+			 mov eax,fileHandle
+			 mov edx,OFFSET passArray
+			 mov ecx,sizeof passArray
+			 call WriteToFile 
+
              lea dx,thanks
              call displayString    
 exit 
@@ -311,34 +412,18 @@ ComputeResult PROC
 	 call writeFloat
   ret
 ComputeResult ENDP 
-            
-; Displaying a three character number....            
-display PROC 
-      mov ax,00h
-      mov al,bl
-          mov bl,100
-          div bl
-          mov cl,al
-          mov al,ah
-          mov ah,0h
-          mov bl,10
-          div bl
-          mov bl,ah
-          mov ch,al
-          mov dl,cl
-          add dl,30h
-          mov ah,02h
-          cmp dl,30h
-          JE M
-          int 21h
-          M:
-          mov dl,ch
-          add dl,30h
-         ; int 21h
-          mov dl,bl
-          add dl,30h
-          int 21h
-  ret 
-display ENDP
 
+inputString proc
+                MOV AH,01H
+				mov ebx,0
+         READ:
+                call readChar
+				call writeChar
+                CMP AL,0DH
+				je _exit
+				inc ebx
+                JMP READ
+			_exit: 
+			ret
+inputString ENDP
 END main
