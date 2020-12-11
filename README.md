@@ -1,1 +1,1 @@
-# COAL-LAB-Project
+# Assembly language code for gpa calculator
